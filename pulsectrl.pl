@@ -168,7 +168,7 @@ sub ProcessCard($) {
     my $line = shift(@$lines);
     my($name, %dict) = ProcessLine($line);
     if(!defined $name) {
-      print "Failed to preocess line '" . $line . "', skipping\n";
+      print "Failed to process line '" . $line . "', skipping\n";
       next;
     }
     my $line_depth = depth($line);
