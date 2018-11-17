@@ -118,8 +118,20 @@ sub depth($) {
 
 sub processColonSpace($$) {
   my($name, $value) = @_;
-  # @TODO: process parameters in parentheses
-  return (trim($name), ("value" => trim($value)));
+  if($value =~ /\s*(.*) \((.*)\)/) { # <name>: <value> (<attr1_name>: <attr1_val>, ...)
+    my %dict = ("value" => trim("$1"));
+    for my $attr (split(/, /, "$2")) {
+      my($attr_name, $attr_val) = split(/: /, $attr);
+      if(!defined $attr_val) {
+        $attr_val = ''
+      };
+      $dict{trim($attr_name)} = trim($attr_val);
+    }
+    return (trim($name), %dict);
+  }
+  else {
+    return (trim($name), ("value" => trim($value)));
+  }
 }
 
 sub processEquals($$) {
