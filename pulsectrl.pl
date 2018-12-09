@@ -22,6 +22,27 @@ require  (dirname(__FILE__) . "/func.pl");
 #   warn "Could not open file '$fileExample' $!";
 # }
 
+# returns a list of (system name, human name) pairs eg. ('Card #1', '"B525 HD Webcam"'')
+sub SortedCards() {
+  my $cards = ListCards();
+  my @result;
+  while(my($card, $props) = each(%$cards)) {
+    push(@result, [$card, $props->{"Properties"}->{"alsa.card_name"}->{"value"}]);
+  }
+  return sort(@result);
+}
+
+# returns a list of (profile name, device name) pairs eg. ('output:hdmi-stereo-extra1, '"FS2735')
+sub SortedProfiles($) {
+  my $cardn = $_[0];
+  my $profiles_hash = ProfilesWithDevices($cardn);
+  my @profiles;
+  while(my @pair = each %$profiles_hash) {
+    push(@profiles, \@pair);
+  }
+  return sort(@profiles);
+}
+
 sub HelpMessage() {
     print "Usage: $0 
           --cards,-c                list cards
@@ -33,31 +54,25 @@ sub HelpMessage() {
 
 GetOptions(
     'cards|c' => \&PrintCards,
+    'profiles|p=i' => \&PrintProfiles,
     'help|?' => sub { HelpMessage(); },
 # ) or HelpMessage();
 ) or die HelpMessage();
 
 # HelpMessage() unless defined $card;
-my $cardn = 0;
 
 sub PrintCards() {
-  my $cards = ListCards();
-  my @result;
-  while(my($card, $props) = each(%$cards)) {
-    push(@result, $props->{"Properties"}->{"alsa.card_name"}->{"value"});
-  }
-  @result = sort(@result);
-  while(my($i, $name) = each(@result)) {
-    printf("%2i: %s\n", $i, $name);
+  my @cards = SortedCards();
+  while(my($i, $desc) = each(@cards)) {
+    printf("%2i: %s\n", $i, $desc->[1]);
   }
 }
 
-# my $profiles_hash = ProfilesWithDevices($cardn);
-# my @profiles;
-# while(my @pair = each %$profiles_hash) {
-#   push(@profiles, \@pair);
-# }
-# @profiles = sort @profiles;
-# while(my($i, $profile) = each(@profiles)) {
-#   printf("%2i: %s\t\t%s", $i, $profile->[0], $profile->[1])
-# }
+sub PrintProfiles($$) {
+  my $cardn = $_[1];
+  my @profiles = SortedProfiles($cardn);
+  while(my($i, $profile) = each(@profiles)) {
+    printf("%2i: %s\t\t%s\n", $i, $profile->[0], $profile->[1])
+  }
+
+}
