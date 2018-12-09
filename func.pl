@@ -67,7 +67,7 @@ sub ProcessCard($) {
     my $line = shift(@$lines);
     my($name, %dict) = ProcessLine($line);
     if(!defined $name) {
-      print "Failed to process line '" . $line . "', skipping\n";
+      # print "Failed to process line '" . $line . "', skipping\n";
       next;
     }
     my $line_depth = depth($line);
@@ -86,7 +86,7 @@ sub ProcessCard($) {
       $depth = $line_depth + 1;
     }
     else {
-      print "Sudden depth jump while processing line '" . $line . "', skipping\n"
+      # print "Sudden depth jump while processing line '" . $line . "', skipping\n"
     }
   }
   return %result;
