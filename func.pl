@@ -106,7 +106,7 @@ sub ListCards() {
 }
 
 
-sub ProfilePrint($) {   ##name need change????
+sub ProfilesWithDevices($) {
   my($cardn) = @_;
   my %always_show_profiles = ("output:analog-stereo+input:analog-stereo" => 1);  ### need change???;
   my %result;

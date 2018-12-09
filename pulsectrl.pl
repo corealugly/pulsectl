@@ -24,23 +24,40 @@ require  (dirname(__FILE__) . "/func.pl");
 
 sub HelpMessage() {
     print "Usage: $0 
-          --card,-c       list cards;
-          --help,-h       Print this help" . "\n";
+          --cards,-c                list cards
+          --profiles,-p <card n>    list profiles for card
+          --activate,-a <profile n> activate profile
+          --help,-h                 Print this help" . "\n";
     exit 0;
 }
 
-# GetOptions(
-#     'card|c=i' => \(my $cardn=undef),
-#     'help|?' => sub { HelpMessage(); },
-# # ) or HelpMessage();
-# ) or die HelpMessage();
+GetOptions(
+    'cards|c' => \&PrintCards,
+    'help|?' => sub { HelpMessage(); },
+# ) or HelpMessage();
+) or die HelpMessage();
 
 # HelpMessage() unless defined $card;
 my $cardn = 0;
 
-my $activprofile = ProfilePrint($cardn);
-
-# print Dumper %result;
-while(my($pr, $dev) = each %$activprofile) {
-  printf "%s\t%s\n", $pr, $dev
+sub PrintCards() {
+  my $cards = ListCards();
+  my @result;
+  while(my($card, $props) = each(%$cards)) {
+    push(@result, $props->{"Properties"}->{"alsa.card_name"}->{"value"});
+  }
+  @result = sort(@result);
+  while(my($i, $name) = each(@result)) {
+    printf("%2i: %s\n", $i, $name);
+  }
 }
+
+# my $profiles_hash = ProfilesWithDevices($cardn);
+# my @profiles;
+# while(my @pair = each %$profiles_hash) {
+#   push(@profiles, \@pair);
+# }
+# @profiles = sort @profiles;
+# while(my($i, $profile) = each(@profiles)) {
+#   printf("%2i: %s\t\t%s", $i, $profile->[0], $profile->[1])
+# }
