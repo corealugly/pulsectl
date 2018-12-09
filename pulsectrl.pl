@@ -1,4 +1,5 @@
 #!/usr/bin/env perl
+use v5.10;
 use strict;
 use warnings;# FATAL => 'all';
 use utf8;
@@ -6,21 +7,13 @@ use utf8;
 # $|=1;
 
 use Cwd 'abs_path';
-use Getopt::Long qw(GetOptions);
+# use Getopt::Long qw(GetOptions);
 use Data::Dumper;
 
 use File::Basename;
 require  (dirname(__FILE__) . "/func.pl");
 
-# my $fileExample = dirname(__FILE__) . "/" . "example.txt";
-# if (open(my $fd, '<:encoding(UTF-8)', $fileExample)) {
-#   while (my $row = <$fd>) {
-#     my $test_input .= "$row";
-#     #print  "$row\n";
-#   }
-# } else {
-#   warn "Could not open file '$fileExample' $!";
-# }
+use Getopt::Long::Subcommand; # exports GetOptions
 
 # returns a list of (system name, human name) pairs eg. ('Card #1', '"B525 HD Webcam"'')
 sub SortedCards() {
@@ -44,22 +37,12 @@ sub SortedProfiles($) {
 }
 
 sub HelpMessage() {
-    print "Usage: $0 
-          --cards,-c                list cards
-          --profiles,-p <card n>    list profiles for card
-          --activate,-a <profile n> activate profile
-          --help,-h                 Print this help" . "\n";
+    say "Usage: $0 
+          list (cards|profiles -c <card>)       list stuff
+          set (profile -c <card> -p <profile>)  set stuff
+          --help,-h                 Print this help";
     exit 0;
 }
-
-GetOptions(
-    'cards|c' => \&PrintCards,
-    'profiles|p=i' => \&PrintProfiles,
-    'help|?' => sub { HelpMessage(); },
-# ) or HelpMessage();
-) or die HelpMessage();
-
-# HelpMessage() unless defined $card;
 
 sub PrintCards() {
   my @cards = SortedCards();
@@ -68,11 +51,87 @@ sub PrintCards() {
   }
 }
 
-sub PrintProfiles($$) {
-  my $cardn = $_[1];
+sub PrintProfiles($) {
+  my $cardn = $_[0];
   my @profiles = SortedProfiles($cardn);
   while(my($i, $profile) = each(@profiles)) {
     printf("%2i: %s\t\t%s\n", $i, $profile->[0], $profile->[1])
   }
+}
+ 
+my %opts;
+my $res = GetOptions(
+ 
+    summary => 'Yet another pulseaudio control application',
+ 
+    # common options recognized by all subcommands
+    options => {
+      'help|h|?' => {
+        summary => 'Display help message',
+        handler => sub {
+          my ($cb, $val, $res) = @_;
+          HelpMessage();
+          exit 0;
+        }
+      }
+    },
+ 
+    subcommands => {
+      list => {
+        summary => 'list stuff',
+        subcommands => {
+          cards => {
+            summary => 'list all cards',
+          }, # cards
+          profiles => {
+            summary => 'list profiles with device names for card',
+            options => {
+              'card|c=i' => {
+                handler => sub {$opts{card} = $_[1];}
+              }
+            }
+          } # profiles
+        }
+      }, # list
+      'set' => {
+        summary => 'set stuff',
+        subcommands => {
+          profile => {
+            summary => 'set profile for card',
+            options => {
+              'card|c=i' => {
+                handler => sub {$opts{card} = $_[1];}
+              },
+              'profile|p=i' => {
+                handler => sub {$opts{profile} = $_[1];}
+              }
+            }
+          } # profile
+        }
+      } # set
+    },
+ 
+    # tell how to complete option value and arguments. see
+    # Getopt::Long::Complete for more details, the arguments are the same
+    # except there is an additional 'subcommand' that gives the subcommand
+    # name.
+    completion => sub {
+        my %args = @_;
+    }
+);
+die "GetOptions failed!\n" unless $res->{success};
 
+my $cmd = join(' ', @{$res->{subcommand}});
+if($cmd eq 'list cards') {
+  PrintCards();
+}
+elsif($cmd eq 'list profiles') {
+  die HelpMessage() unless defined $opts{card};
+  PrintProfiles($opts{'card'});
+}
+elsif($cmd eq 'set profile') {
+  die HelpMessage() unless defined $opts{card} && defined $opts{profile};
+}
+else {
+  HelpMessage();
 }
