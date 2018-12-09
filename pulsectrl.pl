@@ -15,27 +15,6 @@ require  (dirname(__FILE__) . "/func.pl");
 
 use Getopt::Long::Subcommand; # exports GetOptions
 
-# returns a list of (system name, human name) pairs eg. ('Card #1', '"B525 HD Webcam"'')
-sub SortedCards() {
-  my $cards = ListCards();
-  my @result;
-  while(my($card, $props) = each(%$cards)) {
-    push(@result, [$card, $props->{"Properties"}->{"alsa.card_name"}->{"value"}]);
-  }
-  return sort(@result);
-}
-
-# returns a list of (profile name, device name) pairs eg. ('output:hdmi-stereo-extra1, '"FS2735')
-sub SortedProfiles($) {
-  my $cardn = $_[0];
-  my $profiles_hash = ProfilesWithDevices($cardn);
-  my @profiles;
-  while(my @pair = each %$profiles_hash) {
-    push(@profiles, \@pair);
-  }
-  return sort(@profiles);
-}
-
 sub HelpMessage() {
     say "Usage: $0 
           list (cards|profiles -c <card>)       list stuff
@@ -47,7 +26,7 @@ sub HelpMessage() {
 sub PrintCards() {
   my @cards = SortedCards();
   while(my($i, $desc) = each(@cards)) {
-    printf("%2i: %s\n", $i, $desc->[1]);
+    printf("%2i: %s\n", $i, $desc->[1]->{"Properties"}->{"alsa.card_name"}->{"value"});
   }
 }
 
@@ -57,6 +36,17 @@ sub PrintProfiles($) {
   while(my($i, $profile) = each(@profiles)) {
     printf("%2i: %s\t\t%s\n", $i, $profile->[0], $profile->[1])
   }
+}
+
+sub SetCardProfile($$) {
+  my ($cardn, $profilen) = @_;
+  my @cards = SortedCards();
+  my @profiles = SortedProfiles($cardn);
+  my $card_name = $cards[$cardn][1]->{'Name'}->{'value'};
+  my $profile_name = $profiles[$profilen][0];
+  my $cmd = "pactl set-card-profile '$card_name' '$profile_name'";
+  printf "calling \"%s\"..\n", $cmd;
+  `$cmd`;
 }
  
 my %opts;
@@ -131,6 +121,7 @@ elsif($cmd eq 'list profiles') {
 }
 elsif($cmd eq 'set profile') {
   die HelpMessage() unless defined $opts{card} && defined $opts{profile};
+  SetCardProfile($opts{card}, $opts{profile});
 }
 else {
   HelpMessage();

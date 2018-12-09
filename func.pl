@@ -105,12 +105,34 @@ sub ListCards() {
   return \%result;
 }
 
+# returns a sorted list of (system name, properties hash) pairs
+sub SortedCards() {
+  my $cards = ListCards();
+  my @result;
+  while(my($card, $props) = each(%$cards)) {
+    # push(@result, [$props->{"Name"}->{"value"}, $props->{"Properties"}->{"alsa.card_name"}->{"value"}]);
+    push(@result, [$card, $props]);
+  }
+  return sort {$a->[0] cmp $b->[0]} @result;
+}
+
+# returns a list of (profile name, device name) pairs eg. ('output:hdmi-stereo-extra1, '"FS2735')
+sub SortedProfiles($) {
+  my $cardn = $_[0];
+  my $profiles_hash = ProfilesWithDevices($cardn);
+  my @profiles;
+  while(my @pair = each %$profiles_hash) {
+    push(@profiles, \@pair);
+  }
+  return sort {$a->[0] cmp $b->[0]} @profiles;
+}
 
 sub ProfilesWithDevices($) {
   my($cardn) = @_;
   my %always_show_profiles = ("output:analog-stereo+input:analog-stereo" => 1);  ### need change???;
   my %result;
-  my $card = ListCards()->{"Card #$cardn"};
+  my @cards = SortedCards();
+  my $card = $cards[$cardn][1];
   my $profiles = $card->{"Profiles"};
   my $ports = $card->{"Ports"};
   while(my($portname, $portdesc) = each %$ports) {
@@ -123,6 +145,7 @@ sub ProfilesWithDevices($) {
         $result{$pr_name} = $portdesc->{"Properties"}->{"device.product.name"}->{"value"};
       }
       elsif(exists($always_show_profiles{$pr_name})) {
+      # else {
         $result{$pr_name} = "";
       }
     }
